@@ -1,237 +1,119 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+using Northwind.web.IService;
 using Northwind.web.Models;
-using Northwind.web.Results;
-using Northwind.web.Results.Employee_Result;
 
-namespace Northwind.Web.Controllers
+namespace Northwind.web.Controllers
 {
-    public class EmployeeController : Controller
+    public class EmployeesController : Controller
     {
-        HttpClientHandler httpClientHandler = new HttpClientHandler();
+        private readonly IEmployeeServices _employeeService;
 
-        public EmployeeController()
+        public EmployeesController(IEmployeeServices employeeService)
         {
-            this.httpClientHandler = new HttpClientHandler();
-            this.httpClientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyError) => { return true; };
+            _employeeService = employeeService;
         }
 
-        // GET: EmployeeController
+        // GET: EmployeesController
         public async Task<ActionResult> Index()
         {
-            EmployeeGetlistResult employeesGetResult = new EmployeeGetlistResult();
-
-            using (var httpClient = new HttpClient(this.httpClientHandler))
+            var employeeGetListResult = await _employeeService.GetEmployeesAsync();
+            if (employeeGetListResult != null && employeeGetListResult.success)
             {
-                var url = "http://localhost:5057/api/Employees/GetEmployees";
-
-                using (var response = await httpClient.GetAsync(url))
-                {
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                    {
-                        string apiResponse = await response.Content.ReadAsStringAsync();
-                        employeesGetResult = JsonConvert.DeserializeObject<EmployeeGetlistResult>(apiResponse);
-
-                        if (!employeesGetResult.success)
-                        {
-                            ViewBag.Message = employeesGetResult.message;
-                            return View();
-                        }
-                    }
-                }
+                return View(employeeGetListResult.result);
             }
 
-            return View(employeesGetResult.result);
+            ViewBag.Message = employeeGetListResult?.message ?? "Error desconocido";
+            return View();
         }
 
-        // GET: EmployeeController/Details/5
+        // GET: EmployeesController/Details/5
         public async Task<ActionResult> Details(int id)
         {
-            EmployeeGetResult employeeGetResult = new EmployeeGetResult();
-
-            using (var httpClient = new HttpClient(this.httpClientHandler))
+            var employeeGetResult = await _employeeService.GetEmployeeByIdAsync(id);
+            if (employeeGetResult != null && employeeGetResult.success)
             {
-                var url = $"http://localhost:5057/api/Employees/GetEmployeeById/{id}";
-
-                using (var response = await httpClient.GetAsync(url))
-                {
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                    {
-                        string apiResponse = await response.Content.ReadAsStringAsync();
-                        employeeGetResult = JsonConvert.DeserializeObject<EmployeeGetResult>(apiResponse);
-
-                        if (!employeeGetResult.success)
-                        {
-                            ViewBag.Message = employeeGetResult.message;
-                            return View();
-                        }
-                    }
-                }
+                return View(employeeGetResult.result);
             }
 
-            return View(employeeGetResult.result);
+            ViewBag.Message = employeeGetResult?.message ?? "Error desconocido";
+            return View();
         }
 
-        // GET: EmployeeController/Create
+        // GET: EmployeesController/Create
         public ActionResult Create()
         {
             return View();
         }
 
-        // POST: EmployeeController/Create
+        // POST: EmployeesController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Create(EmployeeBaseModel employeeBaseModel)
+        public async Task<ActionResult> Create(EmployeeBaseModel employee)
         {
-            using (var httpClient = new HttpClient(this.httpClientHandler))
+            var result = await _employeeService.CreateEmployeeAsync(employee);
+            if (result != null && result.success)
             {
-                try
-                {
-                    var jsonContent = JsonConvert.SerializeObject(employeeBaseModel);
-                    var contentString = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
-                    var response = await httpClient.PostAsync("http://localhost:5057/api/Employees/CreateEmployee", contentString);
-                    response.EnsureSuccessStatusCode();
-                    var apiResponse = await response.Content.ReadAsStringAsync();
-                    var result = JsonConvert.DeserializeObject<BaseResult>(apiResponse);
-
-                    if (result != null && result.success)
-                    {
-                        return RedirectToAction(nameof(Index));
-                    }
-                    else
-                    {
-                        ViewBag.Message = result?.message ?? "Error desconocido";
-                        return View(employeeBaseModel);
-                    }
-                }
-                catch (HttpRequestException ex)
-                {
-                    ViewBag.Message = $"Error en la solicitud HTTP: {ex.Message}";
-                    return View(employeeBaseModel);
-                }
+                return RedirectToAction(nameof(Index));
             }
+
+            ViewBag.Message = result?.message ?? "Error desconocido";
+            return View(employee);
         }
 
-        // GET: EmployeeController/Edit/5
+        // GET: EmployeesController/Edit/5
         public async Task<ActionResult> Edit(int id)
         {
-            EmployeeGetResult employeeGetResult = new EmployeeGetResult();
-
-            using (var httpClient = new HttpClient(this.httpClientHandler))
+            var employeeGetResult = await _employeeService.GetEmployeeByIdAsync(id);
+            if (employeeGetResult != null && employeeGetResult.success)
             {
-                var url = $"http://localhost:5057/api/Employees/GetEmployeeById/{id}";
-
-                using (var response = await httpClient.GetAsync(url))
-                {
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                    {
-                        string apiResponse = await response.Content.ReadAsStringAsync();
-                        employeeGetResult = JsonConvert.DeserializeObject<EmployeeGetResult>(apiResponse);
-
-                        if (!employeeGetResult.success)
-                        {
-                            ViewBag.Message = employeeGetResult.message;
-                            return View();
-                        }
-                    }
-                }
+                return View(employeeGetResult.result);
             }
 
-            return View(employeeGetResult.result);
+            ViewBag.Message = employeeGetResult?.message ?? "Error desconocido";
+            return View();
         }
 
-        // POST: EmployeeController/Edit/5
+        // POST: EmployeesController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Edit(int id, EmployeeBaseModel employeeBaseModel)
+        public async Task<ActionResult> Edit(int id, EmployeeBaseModel employee)
         {
-            using (var httpClient = new HttpClient(this.httpClientHandler))
+            var result = await _employeeService.UpdateEmployeeAsync(id, employee);
+            if (result != null && result.success)
             {
-                try
-                {
-                    var jsonContent = JsonConvert.SerializeObject(employeeBaseModel);
-                    var contentString = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
-                    var response = await httpClient.PutAsync($"http://localhost:5057/api/Employees/UpdateEmployee/{id}", contentString);
-                    response.EnsureSuccessStatusCode();
-                    var apiResponse = await response.Content.ReadAsStringAsync();
-                    var result = JsonConvert.DeserializeObject<BaseResult>(apiResponse);
-
-                    if (result != null && result.success)
-                    {
-                        return RedirectToAction(nameof(Index));
-                    }
-                    else
-                    {
-                        ViewBag.Message = result?.message ?? "Error desconocido";
-                        return View(employeeBaseModel);
-                    }
-                }
-                catch (HttpRequestException ex)
-                {
-                    ViewBag.Message = $"Error en la solicitud HTTP: {ex.Message}";
-                    return View(employeeBaseModel);
-                }
+                return RedirectToAction(nameof(Index));
             }
+
+            ViewBag.Message = result?.message ?? "Error desconocido";
+            return View(employee);
         }
 
-        // GET: EmployeeController/Delete/5
+        // GET: EmployeesController/Delete/5
         public async Task<ActionResult> Delete(int id)
         {
-            EmployeeGetResult employeeGetResult = new EmployeeGetResult();
-
-            using (var httpClient = new HttpClient(this.httpClientHandler))
+            var employeeGetResult = await _employeeService.GetEmployeeByIdAsync(id);
+            if (employeeGetResult != null && employeeGetResult.success)
             {
-                var url = $"http://localhost:5057/api/Employees/GetEmployeeById/{id}";
-
-                using (var response = await httpClient.GetAsync(url))
-                {
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                    {
-                        string apiResponse = await response.Content.ReadAsStringAsync();
-                        employeeGetResult = JsonConvert.DeserializeObject<EmployeeGetResult>(apiResponse);
-
-                        if (!employeeGetResult.success)
-                        {
-                            ViewBag.Message = employeeGetResult.message;
-                            return View();
-                        }
-                    }
-                }
+                return View(employeeGetResult.result);
             }
 
-            return View(employeeGetResult.result);
+            ViewBag.Message = employeeGetResult?.message ?? "Error desconocido";
+            return View();
         }
 
-        // POST: EmployeeController/Delete/5
+        // POST: EmployeesController/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> DeleteConfirmed(int id)
         {
-            using (var httpClient = new HttpClient(this.httpClientHandler))
+            var result = await _employeeService.DeleteEmployeeAsync(id);
+            if (result != null && result.success)
             {
-                try
-                {
-                    var response = await httpClient.DeleteAsync($"http://localhost:5057/api/Employees/RemoveEmployee/{id}");
-                    response.EnsureSuccessStatusCode();
-                    var apiResponse = await response.Content.ReadAsStringAsync();
-                    var result = JsonConvert.DeserializeObject<BaseResult>(apiResponse);
-
-                    if (result != null && result.success)
-                    {
-                        return RedirectToAction(nameof(Index));
-                    }
-                    else
-                    {
-                        ViewBag.Message = result?.message ?? "Error desconocido";
-                        return RedirectToAction(nameof(Delete), new { id });
-                    }
-                }
-                catch (HttpRequestException ex)
-                {
-                    ViewBag.Message = $"Error en la solicitud HTTP: {ex.Message}";
-                    return RedirectToAction(nameof(Delete), new { id });
-                }
+                return RedirectToAction(nameof(Index));
             }
+
+            ViewBag.Message = result?.message ?? "Error desconocido";
+            return RedirectToAction(nameof(Delete), new { id });
         }
     }
 }

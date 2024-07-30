@@ -1,7 +1,19 @@
+using Northwind.web.Dependency;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+//Add Employee Dependency
+builder.Services.AddEmployeesDependency();
+
+//Add orders dependency
+builder.Services.AddOrdersDependendy();
+
+//Add Suppliers Dependency
+builder.Services.AddSuppliersDependency();
+
 
 var app = builder.Build();
 
